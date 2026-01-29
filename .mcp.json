@@ -1,9 +1,7 @@
 {
   "mcpServers": {
     "chat-mcp-claude": {
-      "command": "node",
-      "args": ["src/index.js"],
-      "cwd": "/opt/docker-test/server-mcp/chat-mcp-claude"
+      "url": "http://localhost:3001/sse"
     }
   }
 }

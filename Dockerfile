@@ -21,5 +21,8 @@ COPY src ./src
 # Create data directory
 RUN mkdir -p /app/data /app/db
 
-# Default command
-CMD ["node", "src/index.js"]
+# Expose SSE port
+EXPOSE 3001
+
+# Default command (SSE mode)
+CMD ["node", "src/server-sse.js"]

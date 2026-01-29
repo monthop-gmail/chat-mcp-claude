@@ -18,8 +18,11 @@ MCP Server for chat history RAG (Retrieval-Augmented Generation) using SQLite FT
 # Install dependencies
 npm install
 
-# Run MCP server (stdio mode)
+# Run MCP server (SSE mode on port 3001)
 npm start
+
+# Run MCP server (stdio mode)
+npm run start:stdio
 
 # Development with auto-reload
 npm run dev
@@ -35,7 +38,8 @@ chat-mcp-claude/
 ├── db/                    # Chat history text files (input)
 ├── data/                  # SQLite database (auto-generated)
 ├── src/
-│   ├── index.js          # MCP server, tool handlers
+│   ├── server-sse.js     # SSE transport server (port 3001)
+│   ├── index.js          # Stdio transport server
 │   ├── db.js             # SQLite + FTS5 operations
 │   ├── parser.js         # Chat file parser
 │   └── config.js         # Configuration
@@ -55,6 +59,12 @@ chat-mcp-claude/
 | `get_recent_messages` | Latest messages |
 | `list_senders` | All unique senders |
 
+## Endpoints (SSE Mode)
+
+- `GET /sse` - SSE connection endpoint
+- `POST /messages` - Message endpoint
+- `GET /health` - Health check
+
 ## Chat File Format
 
 The parser expects LINE/WhatsApp export format:
@@ -72,15 +82,14 @@ HH:MM<tab>Sender<tab>Message content
 - FTS5 index for Thai/English full-text search
 - WAL mode for performance
 
-## Claude Desktop Config
+## Claude Code Config
 
-Add to `~/.config/claude/claude_desktop_config.json`:
+Add to `.mcp.json` or Claude Code settings:
 ```json
 {
   "mcpServers": {
     "chat-history": {
-      "command": "node",
-      "args": ["/opt/docker-test/server-mcp/chat-mcp-claude/src/index.js"]
+      "url": "http://localhost:3001/sse"
     }
   }
 }
