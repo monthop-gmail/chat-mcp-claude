@@ -11,11 +11,11 @@ const PROJECT_ROOT = join(__dirname, '..');
 
 export const config = {
   // Database settings
-  DB_PATH: process.env.CHAT_DB_PATH || join(PROJECT_ROOT, 'data', 'chat.db'),
+  DB_PATH: process.env.CHAT_DB_PATH || join(PROJECT_ROOT, 'db', 'chat.db'),
   DB_ENABLED: process.env.CHAT_DB_ENABLED !== 'false',
 
-  // Chat history directory
-  CHAT_DIR: process.env.CHAT_DIR || join(PROJECT_ROOT, 'db'),
+  // Chat history directory (raw text files)
+  CHAT_DIR: process.env.CHAT_DIR || join(PROJECT_ROOT, 'data', 'raw'),
 
   // Search settings
   DEFAULT_LIMIT: 20,

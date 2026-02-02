@@ -31,7 +31,7 @@ cd chat-mcp-claude
 
 ### 2. Add Chat Files
 
-วางไฟล์ chat export ไว้ใน `db/` folder (LINE/WhatsApp format)
+วางไฟล์ chat export ไว้ใน `data/raw/` folder (LINE/WhatsApp format)
 
 ### 3. Start with Docker Compose
 

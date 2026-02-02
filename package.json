@@ -11,7 +11,9 @@
     "start": "node src/server-sse.js",
     "start:stdio": "node src/index.js",
     "dev": "node --watch src/server-sse.js",
-    "dev:stdio": "node --watch src/index.js"
+    "dev:stdio": "node --watch src/index.js",
+    "import": "node src/import.js",
+    "import:all": "node src/import.js --all"
   },
   "keywords": [
     "mcp",

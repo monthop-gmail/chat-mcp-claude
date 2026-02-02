@@ -35,8 +35,8 @@ docker-compose up -d
 
 ```
 chat-mcp-claude/
-├── db/                    # Chat history text files (input)
-├── data/                  # SQLite database (auto-generated)
+├── db/                    # SQLite database (chat.db)
+├── data/raw/              # Chat history text files (input)
 ├── src/
 │   ├── server-sse.js     # SSE transport server (port 3001)
 │   ├── index.js          # Stdio transport server

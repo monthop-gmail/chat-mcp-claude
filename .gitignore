@@ -5,3 +5,6 @@ db/
 *.db-wal
 *.db-shm
 .env
+
+# Internal docs (not for public)
+docs/

@@ -8,10 +8,10 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./db:/app/db:ro
-      - ./data:/app/data
+      - ./db:/app/db
+      - ./data/raw:/app/data/raw:ro
     environment:
-      - CHAT_DB_PATH=/app/data/chat.db
-      - CHAT_DIR=/app/db
+      - CHAT_DB_PATH=/app/db/chat.db
+      - CHAT_DIR=/app/data/raw
       - PORT=3001
       - HOST=0.0.0.0
