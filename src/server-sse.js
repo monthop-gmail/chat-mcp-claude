@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 
 /**
- * MCP Server for Chat History RAG - SSE Transport Version
- * Runs as HTTP server with Server-Sent Events (SSE) transport
+ * MCP Server for Chat History RAG - Streamable HTTP Transport Version
+ * Runs as HTTP server with Streamable HTTP transport
  */
 
 import http from 'http';
+import crypto from 'crypto';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  isInitializeRequest,
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { config } from './config.js';
@@ -295,8 +297,8 @@ const httpServer = http.createServer(async (req, res) => {
 
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -311,56 +313,81 @@ const httpServer = http.createServer(async (req, res) => {
       status: 'ok',
       server: 'chat-mcp-claude',
       version: '1.0.0',
-      transport: 'sse',
+      transport: 'streamable-http',
       database: db.isDBAvailable() ? 'connected' : 'disabled',
       messages: db.getMessageCount(),
     }));
     return;
   }
 
-  // SSE endpoint
-  if (url.pathname === '/sse') {
-    console.log('New SSE connection');
+  // Streamable HTTP endpoint
+  if (url.pathname === '/mcp') {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const jsonBody = JSON.parse(body);
+          const sessionId = req.headers['mcp-session-id'];
 
-    const server = createMCPServer();
-    const transport = new SSEServerTransport('/messages', res);
+          let transport;
 
-    // Store transport for potential cleanup
-    const connectionId = Date.now().toString();
-    activeTransports.set(connectionId, { server, transport });
-
-    // Cleanup on close
-    res.on('close', () => {
-      console.log('SSE connection closed');
-      activeTransports.delete(connectionId);
-    });
-
-    await server.connect(transport);
-    return;
-  }
-
-  // Message endpoint for SSE
-  if (url.pathname === '/messages' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', async () => {
-      try {
-        // Find the transport that should handle this message
-        for (const [, { transport }] of activeTransports) {
-          if (transport.handlePostMessage) {
-            await transport.handlePostMessage(req, res, body);
+          if (sessionId && activeTransports.has(sessionId)) {
+            transport = activeTransports.get(sessionId).transport;
+          } else if (!sessionId && isInitializeRequest(jsonBody)) {
+            const server = createMCPServer();
+            transport = new StreamableHTTPServerTransport({
+              sessionIdGenerator: () => crypto.randomUUID(),
+              onsessioninitialized: (sid) => {
+                activeTransports.set(sid, { server, transport });
+              },
+            });
+            transport.onclose = () => {
+              const sid = transport.sessionId;
+              if (sid) activeTransports.delete(sid);
+            };
+            await server.connect(transport);
+          } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              jsonrpc: '2.0',
+              error: { code: -32000, message: 'Bad Request: No valid session ID' },
+              id: null,
+            }));
             return;
           }
+
+          await transport.handleRequest(req, res, jsonBody);
+        } catch (error) {
+          console.error('Error handling MCP request:', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: String(error) }));
         }
-        res.writeHead(404);
-        res.end('No active session');
-      } catch (error) {
-        console.error('Error handling message:', error);
-        res.writeHead(500);
-        res.end('Internal error');
+      });
+      return;
+    }
+
+    if (req.method === 'GET') {
+      const sessionId = req.headers['mcp-session-id'];
+      if (!sessionId || !activeTransports.has(sessionId)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
+        return;
       }
-    });
-    return;
+      await activeTransports.get(sessionId).transport.handleRequest(req, res);
+      return;
+    }
+
+    if (req.method === 'DELETE') {
+      const sessionId = req.headers['mcp-session-id'];
+      if (!sessionId || !activeTransports.has(sessionId)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
+        return;
+      }
+      await activeTransports.get(sessionId).transport.handleRequest(req, res);
+      return;
+    }
   }
 
   // 404 for other routes
@@ -368,8 +395,7 @@ const httpServer = http.createServer(async (req, res) => {
   res.end(JSON.stringify({
     error: 'Not found',
     endpoints: {
-      '/sse': 'SSE connection endpoint',
-      '/messages': 'Message endpoint (POST)',
+      '/mcp': 'Streamable HTTP endpoint (POST, GET, DELETE)',
       '/health': 'Health check'
     }
   }));
@@ -391,9 +417,9 @@ async function main() {
   }
 
   httpServer.listen(PORT, HOST, () => {
-    console.log(`Chat MCP Server v1.0 (SSE)`);
+    console.log(`Chat MCP Server v1.0 (Streamable HTTP)`);
     console.log(`Listening on http://${HOST}:${PORT}`);
-    console.log(`SSE endpoint: http://${HOST}:${PORT}/sse`);
+    console.log(`MCP endpoint: http://${HOST}:${PORT}/mcp`);
     console.log(`Health check: http://${HOST}:${PORT}/health`);
   });
 }

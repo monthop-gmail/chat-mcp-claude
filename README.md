@@ -56,7 +56,7 @@ docker logs -f chat-mcp-claude
 
 ```bash
 # Add MCP server
-claude mcp add --transport sse --scope user chat-history http://localhost:3001/sse
+claude mcp add --transport streamable-http --scope user chat-history http://localhost:3001/mcp
 
 # Verify connection
 claude mcp list
@@ -69,7 +69,7 @@ claude mcp remove chat-history
 
 | Endpoint | Description |
 |----------|-------------|
-| `http://localhost:3001/sse` | SSE connection for MCP |
+| `http://localhost:3001/mcp` | Streamable HTTP endpoint for MCP |
 | `http://localhost:3001/health` | Health check |
 
 ## Chat File Format

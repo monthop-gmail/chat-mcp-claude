@@ -18,7 +18,7 @@ MCP Server for chat history RAG (Retrieval-Augmented Generation) using SQLite FT
 # Install dependencies
 npm install
 
-# Run MCP server (SSE mode on port 3001)
+# Run MCP server (Streamable HTTP mode on port 3001)
 npm start
 
 # Run MCP server (stdio mode)
@@ -38,7 +38,7 @@ chat-mcp-claude/
 ├── db/                    # SQLite database (chat.db)
 ├── data/raw/              # Chat history text files (input)
 ├── src/
-│   ├── server-sse.js     # SSE transport server (port 3001)
+│   ├── server-sse.js     # Streamable HTTP transport server (port 3001)
 │   ├── index.js          # Stdio transport server
 │   ├── db.js             # SQLite + FTS5 operations
 │   ├── parser.js         # Chat file parser
@@ -59,10 +59,11 @@ chat-mcp-claude/
 | `get_recent_messages` | Latest messages |
 | `list_senders` | All unique senders |
 
-## Endpoints (SSE Mode)
+## Endpoints (Streamable HTTP Mode)
 
-- `GET /sse` - SSE connection endpoint
-- `POST /messages` - Message endpoint
+- `POST /mcp` - MCP message endpoint (Streamable HTTP)
+- `GET /mcp` - SSE stream endpoint (session-based)
+- `DELETE /mcp` - Session termination
 - `GET /health` - Health check
 
 ## Chat File Format
@@ -89,7 +90,7 @@ Add to `.mcp.json` or Claude Code settings:
 {
   "mcpServers": {
     "chat-history": {
-      "url": "http://localhost:3001/sse"
+      "url": "http://localhost:3001/mcp"
     }
   }
 }
