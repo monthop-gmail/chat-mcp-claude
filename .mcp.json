@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "chat-history": {
-      "url": "http://localhost:3001/sse"
+      "url": "http://localhost:3001/mcp"
     }
   }
 }
